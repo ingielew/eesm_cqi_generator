@@ -1,5 +1,7 @@
 from numpy import NaN, log10, float_power, power
-from math import ceil, floor
+from math import ceil
+
+
 
 snr_range_min = -11
 snr_range_max = 21
@@ -9,10 +11,12 @@ min_snr = -9  # lowest SNR yielding proper analytical output
 max_snr = 23
 
 sc_freq = 15000  # Hz
-num_repetitions = 100
+num_repetitions = 5000
+
+supported_bandwidths = ['5', '10', '15', '20']
 
 no_of_subbands_for_bw = {
-    "5": 6,
+    "5": 7,
     "10": 9,
     "15": 10,
     "20": 13
@@ -50,7 +54,7 @@ no_prbs_in_rgb_for_bw = {
 # MCS Selection for Throughput Improvement in Downlink LTE Systems
 #     J. Fan, Q. Yin, G. Y. Li, B. Peng, X. Zhu
 cqi_to_lambda_values = {
-    '0': NaN,
+    '0': 1,
     '1': 1,
     '2': 1.4,
     '3': 1.4,
@@ -90,82 +94,6 @@ cqi_to_sinr_thresholds = {
     '15': 19.809
 }
 
-generated_df = {
-    'lambdas': [],
-    'pathloss_exp': [],
-    'target_snr': [],
-    'bw': [],
-    'punctured_sc': [],
-    'cqi_est': [],
-    'wb_eff_snr': [],
-    'wb_eff_cqi': [],
-    'sb_0_eff_snr': [],
-    'sb_0_eff_cqi': [],
-    'sb_1_eff_snr': [],
-    'sb_1_eff_cqi': [],
-    'sb_2_eff_snr': [],
-    'sb_2_eff_cqi': [],
-    'sb_3_eff_snr': [],
-    'sb_3_eff_cqi': [],
-    'sb_4_eff_snr': [],
-    'sb_4_eff_cqi': [],
-    'sb_5_eff_snr': [],
-    'sb_5_eff_cqi': [],
-    'sb_6_eff_snr': [],
-    'sb_6_eff_cqi': [],
-    'sb_7_eff_snr': [],
-    'sb_7_eff_cqi': [],
-    'sb_8_eff_snr': [],
-    'sb_8_eff_cqi': [],
-    'sb_9_eff_snr': [],
-    'sb_9_eff_cqi': [],
-    'sb_10_eff_snr': [],
-    'sb_10_eff_cqi': [],
-    'sb_11_eff_snr': [],
-    'sb_11_eff_cqi': [],
-    'sb_12_eff_snr': [],
-    'sb_12_eff_cqi': []
-}
-
-
-results_df = {
-    'bw': [],
-    'target_snr': [],
-    'punctured_sc': [],
-    'wb_snr_mean': [],
-    'wb_snr_mode': [],
-    'wb_snr_mean_delta': [],
-    'wb_snr_mode_delta': [],
-    'wb_snr_var': [],
-    'wb_snr_mean_db': [],
-    'wb_snr_mode_db': [],
-    'wb_snr_mean_delta_db': [],
-    'wb_snr_mode_delta_db': [],
-    'wb_snr_var_db': [],
-    'sb_snr_mean': [],
-    'sb_snr_mode': [],
-    'sb_snr_mean_delta': [],
-    'sb_snr_mode_delta': [],
-    'sb_snr_var': [],
-    'sb_snr_mean_db': [],
-    'sb_snr_mode_db': [],
-    'sb_snr_mean_delta_db': [],
-    'sb_snr_mode_delta_db': [],
-    'sb_snr_var_db': [],
-    'wb_cqi_mean': [],
-    'wb_cqi_mode': [],
-    'wb_cqi_delta': [],
-    'sb_cqi_mean': [],
-    'sb_cqi_mode': [],
-    'sb_cqi_delta': [],
-}
-
-all_eff_sb_snr_columns = '"sb_snr_0", "sb_snr_1", "sb_snr_2", "sb_snr_3", "sb_snr_4", "sb_snr_5",' \
-                      ' "sb_snr_6","sb_snr_7","sb_snr_8", "sb_snr_9", "sb_snr_10", "sb_snr_11", "sb_snr_12"'
-
-all_eff_snr_columns = '"wb_snr", "sb_snr_0", "sb_snr_1", "sb_snr_2", "sb_snr_3", "sb_snr_4", "sb_snr_5",' \
-                      ' "sb_snr_6","sb_snr_7","sb_snr_8", "sb_snr_9", "sb_snr_10", "sb_snr_11", "sb_snr_12"'
-
 # 1.4MHz and 3MHz cells skipped deliberately
 data_ranges = {
     'pathloss_exp': [1, 2, 3, 4, 5, 6],
@@ -183,3 +111,5 @@ data_ranges = {
 
 noise_floor_db = 10*log10(1.38*float_power(10, -23)*290*1000) + 1.5 + 10*log10(sc_freq)
 noise_floor_sc = power(10, noise_floor_db/10)
+
+
