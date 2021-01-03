@@ -5,6 +5,7 @@ import numpy as np
 from pandas import DataFrame
 from examples.parse_and_plot.helpers import plot_wrapper
 from collections import Counter
+from multiproc import multiproc
 
 
 class Parser:
