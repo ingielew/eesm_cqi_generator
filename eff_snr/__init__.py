@@ -11,10 +11,10 @@ def main():
     config.config.initialize_result_dir()
     config.config.initialize_root_dir()
 
-    print("4", config.config.DEFAULT_CONFIG_DIR)
-
-    args = config.config_cli.parse_cli()
+    sim_config = config.config_cli.parse_cli()
     if len(argv) == 1:
-        args = config.config_gui.get_config()
+        sim_config = config.config_gui.get_config()
+    print(sim_config)
 
+    eff_snr_generator.main(sim_config)
     # eff_snr_generator.generate_eesm_distribution(2, '10', -3, 0, distance=1)

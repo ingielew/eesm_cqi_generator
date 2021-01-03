@@ -3,8 +3,8 @@ import numpy as np
 
 
 def calc_eff_subband_snr(sc_snr_arr, param_lambda, cell_bw='20'):
-    n_sbs = constants.no_of_subbands_for_bw[cell_bw]
-    n_prbs_in_sb = constants.no_of_prbs_in_subband_for_bw[cell_bw]
+    n_sbs = constants.no_of_subbands_for_bw[str(cell_bw)]
+    n_prbs_in_sb = constants.no_of_prbs_in_subband_for_bw[str(cell_bw)]
     n_scs_in_sb = constants.no_of_sc_in_prb * n_prbs_in_sb
     negative_lambda_inverted = float(-1/param_lambda)
     subband_snr = []

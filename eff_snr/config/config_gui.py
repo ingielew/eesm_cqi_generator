@@ -12,6 +12,7 @@ def get_config():
     root = tk.Tk()
     app = Application(master=root)
     app.mainloop()
+    return SIMULATION_CONFIG
 
 
 class Application(tk.Frame):
@@ -28,13 +29,13 @@ class Application(tk.Frame):
         super().__init__(master)
         self.master = master
         self.create_widgets()
-        self.master.geometry("600x300")
+        self.master.geometry("650x350")
         self.master.title("Effective SNR calculator")
 
     def save_input_values(self):
         SIMULATION_CONFIG['data_storage_type'] = self.data_storage_type.get()
         SIMULATION_CONFIG['bw'].extend(list(self.bandwidths))
-        SIMULATION_CONFIG['target_snr'].extend(self.get_snr_range(self.snr_range_entry.get()))
+        SIMULATION_CONFIG['target_snr'].extend(config.get_snr_range(self.snr_range_entry.get()))
         SIMULATION_CONFIG['punctured_sc'] = self.no_of_punctured_resources_entry.get()
         SIMULATION_CONFIG['puncturing_area'] = self.puncturing_location.get()
         SIMULATION_CONFIG['pathloss_exp'] = self.pl_exp_entry.get()
@@ -55,7 +56,7 @@ class Application(tk.Frame):
 
     def use_default_settings(self):
         with open(config.DEFAULT_CONFIG_DIR) as config_file:
-            self.parse_config_file(config_file)
+            config.parse_config_file(config_file)
         self.master.destroy()
 
     def create_widgets(self):
@@ -129,7 +130,7 @@ class Application(tk.Frame):
     def select_path(self):
         filename = filedialog.askopenfilename(filetypes=[("ini files", "*.ini")])
         with open(filename) as config_file:
-            self.parse_config_file(config_file)
+            config.parse_config_file(config_file)
         self.master.destroy()
 
 

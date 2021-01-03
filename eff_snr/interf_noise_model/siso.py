@@ -6,7 +6,7 @@ from .. import constants
 def generate_siso_channel_distribution(mean_val, std_dev, bw, pathloss_exp, distance):
     complex_normal_channel_gain = sqrt(1/power(float(distance), float(pathloss_exp))) * \
                                   complex_gaussian.generate_complex_gaussian_distribution(
-                                      constants.no_of_sc_in_prb * constants.no_of_prbs_in_cell_for_bw[bw],
+                                      constants.no_of_sc_in_prb * constants.no_of_prbs_in_cell_for_bw[str(bw)],
                                       mean_val, std_dev
                                   )
     attenuation_per_sc = abs(complex_normal_channel_gain)  # Rayleigh-distributed attenuation (var = ~0.2)

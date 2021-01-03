@@ -2,7 +2,6 @@ from numpy import NaN, log10, float_power, power
 from math import ceil
 
 
-
 snr_range_min = -11
 snr_range_max = 21
 no_of_sc_in_prb = 12
