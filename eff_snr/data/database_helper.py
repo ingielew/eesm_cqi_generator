@@ -1,10 +1,9 @@
 import sqlalchemy
 from eff_snr import constants
-from pandas import read_sql_query, DataFrame
+from pandas import DataFrame
 from numpy import NaN
 from os import path
 from . import constants as data_constants
-import eff_snr.config.config
 
 
 def write_gen_data_to_df(bw, lambdas, pathloss_exp, punctured_sc, subband_eff_snr_arr, target_snr, wb_snr,
@@ -37,7 +36,7 @@ def commit_gen_data_to_sql(df, engine):
     df.to_sql('data_input', con=engine, schema=None, if_exists='append', index=False, index_label=None)
 
 
-def create_db_engine():
-    db_path = path.join(eff_snr.config.config.RESULTS_DIR, 'data.db')
+def create_db_engine(write_path):
+    db_path = path.join(write_path, 'data.db')
     print(db_path)
     return sqlalchemy.create_engine('{}:///{}'.format('sqlite', db_path))

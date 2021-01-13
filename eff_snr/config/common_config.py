@@ -11,7 +11,10 @@ SIMULATION_CONFIG = {
     'puncturing_area': 0,
     'pathloss_exp': 0,
     'distance': 0,
-    'repetitions': 0
+    'repetitions': 0,
+    'generate': 0,
+    'process_results': 0,
+    'process_data_file': ""
 }
 
 RESULTS_DIR = ""
@@ -68,3 +71,7 @@ def get_snr_range(snr_range_entry_val):
     if 0 in result:
         result.remove(0)  # SNR in dB, 0 not allowed.
     return result
+
+
+def join_paths(path_1, path_2):
+    return os.path.join(path_1, path_2)

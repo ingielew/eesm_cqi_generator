@@ -4,10 +4,12 @@ from ast import literal_eval
 from pandas import DataFrame
 from . import constants
 from copy import deepcopy
-from .interf_noise_model import siso, puncture
-from .cqi import cqi
-from .eesm import eesm
+from eff_snr.generator.interf_noise_model import siso
+from .generator.interf_noise_model import puncture
+from .generator.cqi import cqi
+from .generator.eesm import eesm
 from .data import database_helper
+import eff_snr.config.common_config
 
 
 class EffSnrGenerator:
@@ -24,18 +26,14 @@ class EffSnrGenerator:
         lin_target_snr = np.power(float(10), float(self.target_snr / 10))
 
         channel_gain_response = siso.generate_siso_channel_distribution(mean, std_deviation, self.bw,
-                                                                                 pathloss_exp=self.pathloss_exp,
-                                                                                 distance=self.distance)
+                                                                        pathloss_exp=self.pathloss_exp,
+                                                                        distance=self.distance)
 
         rx_snr_sc = channel_gain_response * lin_target_snr
         rx_snr_sc = puncture.puncture_higher(rx_snr_sc, self.punctured_sc)
-
         mean_snr = np.mean(rx_snr_sc)
-
         cqi_estimate = cqi.get_cqi_est(mean_snr)
-
         lambda_param = constants.cqi_to_lambda_values[cqi_estimate]
-
         subband_eff_snr_arr = eesm.calc_eff_subband_snr(sc_snr_arr=rx_snr_sc, param_lambda=lambda_param, cell_bw=self.bw)
 
         eff_sb_cqi = []
@@ -53,11 +51,10 @@ class EffSnrGenerator:
                                                       subband_eff_snr_arr,
                                                       self.target_snr,
                                                       wb_snr, cqi_estimate, eff_wb_cqi, eff_sb_cqi)
-
         return gen_df
 
 
-def run_generation(bw, distance, pathloss_exp, punctured_sc_perc, repetitions, target_snr):
+def generate_eff_snr(bw, distance, pathloss_exp, punctured_sc_perc, repetitions, target_snr):
     eff_snr_generator = EffSnrGenerator(pathloss_exp, bw, target_snr, punctured_sc_perc, distance)
     print('bw', bw, 'tar_snr', target_snr, 'rep', repetitions)
     df = DataFrame()
@@ -69,50 +66,43 @@ def run_generation(bw, distance, pathloss_exp, punctured_sc_perc, repetitions, t
 
 def main(sim_config):
     data_storage_type = sim_config['data_storage_type']
-    print(data_storage_type)
     bw = list(literal_eval(sim_config['bw']))
-    print(bw)
     target_snr = list(literal_eval(sim_config['target_snr']))
-    # print(target_snr)
-
     punctured_sc_perc = literal_eval(sim_config['punctured_sc'])
-    # print(punctured_sc_perc)
     puncturing_area = sim_config['puncturing_area']
-    # print(puncturing_area)
     pathloss_exp = literal_eval(sim_config['pathloss_exp'])
-    # print(pathloss_exp)
     distance = literal_eval(sim_config['distance'])
-    # print(distance)
     repetitions = literal_eval(sim_config['repetitions'])
-    # repetitions = 3
-    # print(repetitions)
 
     db = None
+    results_path = eff_snr.config.common_config.RESULTS_DIR
     if data_storage_type == "sqlite3":
-        db = database_helper.create_db_engine()
+        db = database_helper.create_db_engine(results_path)
 
-    is_multiproc = True
+    is_multiprocessing = True
 
-    if is_multiproc is True:
+    if is_multiprocessing is True:
         input_list = []
         for bandwidths in bw:
             for tar_snr in target_snr:
                 input_list.append((bandwidths, distance, pathloss_exp, punctured_sc_perc, repetitions, tar_snr))
 
-        print(tuple(input_list))
         pool = multiprocessing.Pool(multiprocessing.cpu_count())
-        gen_df = pool.starmap_async(run_generation, tuple(input_list))
-        for data_frames in gen_df.get():
-            database_helper.commit_gen_data_to_sql(data_frames, db)
-
+        gen_df_list = pool.starmap_async(generate_eff_snr, tuple(input_list))
+        for data_frames in gen_df_list.get():
+            if db is not None:
+                database_helper.commit_gen_data_to_sql(data_frames, db)
+            else:
+                csv_filepath = eff_snr.config.common_config.join_paths(results_path, 'result.csv')
+                data_frames.to_csv(csv_filepath, sep=',')
     else:
-        # for bandwidth in bw:
-        # for tar_snr in target_snr:
-        eff_snr_generator = EffSnrGenerator(pathloss_exp, bw, target_snr, punctured_sc_perc, distance)
-        for i in range(0, repetitions):
-            print('bw', bw, 'tar_snr', target_snr, 'rep', repetitions)
-            # gen_df = eff_snr_generator.generate_eesm_distribution()
-            # print(gen_df)
-            # database_helper.commit_gen_data_to_sql(gen_df, db)
-
-
+        for bandwidth in bw:
+            for tar_snr in target_snr:
+                eff_snr_generator = EffSnrGenerator(pathloss_exp, bandwidth, tar_snr, punctured_sc_perc, distance)
+                for i in range(0, repetitions):
+                    gen_df = eff_snr_generator.generate_eesm_distribution()
+                    if db is not None:
+                        database_helper.commit_gen_data_to_sql(gen_df, db)
+                    else:
+                        csv_filepath = eff_snr.config.common_config.join_paths(results_path, 'result.csv')
+                        gen_df.to_csv(csv_filepath, sep=',')

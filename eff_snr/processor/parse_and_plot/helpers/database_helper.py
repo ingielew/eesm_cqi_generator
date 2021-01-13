@@ -2,6 +2,7 @@ import sqlalchemy
 from eff_snr import constants
 from pandas import read_sql_query, DataFrame
 
+
 class DatabaseHelper:
     def __init__(self):
         self.df_gen = DataFrame.from_dict(constants.generated_df)

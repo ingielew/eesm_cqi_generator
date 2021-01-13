@@ -1,20 +1,21 @@
-from eff_snr import constants
+from eff_snr.data import constants as data_const
+from eff_snr import constants as common_const
 from copy import deepcopy
 from scipy import stats
 import numpy as np
 from pandas import DataFrame
-from examples.parse_and_plot.helpers import plot_wrapper
+from eff_snr.processor.parse_and_plot.helpers import plot_wrapper
 from collections import Counter
-from multiproc import multiproc
-
+from eff_snr.data import database_helper
+import os
 
 class Parser:
     def __init__(self, database):
         self.db = database
 
     def handle_subband_results(self, bw, target_snr):
-        results_df = DataFrame.from_dict(constants.results_df)
-        combined_results_df = DataFrame.from_dict(constants.combined_results)
+        results_df = DataFrame.from_dict(data_const.results_df)
+        combined_results_df = DataFrame.from_dict(data_const.combined_results)
 
         combined_wb_dist_snr = []
         combined_wb_dist_cqi = []
@@ -23,7 +24,7 @@ class Parser:
         combined_punctured_sc = []
         figure_name = "{}_{}_".format(bw, target_snr)
 
-        for punctured_sc in constants.data_ranges['punctured_sc_{}Mhz'.format(bw)]:
+        for punctured_sc in common_const.data_ranges['punctured_sc_{}Mhz'.format(bw)]:
             sc_figure_name = figure_name + "{}_".format(punctured_sc)
             if punctured_sc == 0:
                 self.write_partial_df(results_df, 'deltas', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
@@ -32,7 +33,7 @@ class Parser:
             self.write_partial_df(results_df, 'config', bw, target_snr, punctured_sc)
 
             sb_eff_snr_lin = []
-            for i in range(0, constants.avail_sb_ranges_per_bw[bw]):
+            for i in range(0, common_const.avail_sb_ranges_per_bw[bw]):
                 # print("subband no", constants.avail_sb_ranges_per_bw[bw], "bw", bw)
                 sb_eff_snr_lin.extend(result['sb_{}_eff_snr'.format(i)])
             #
@@ -74,7 +75,7 @@ class Parser:
             plot_wrapper.plot(clean_result, sb_snr_lin_comment, sb_snr_db_fig_name, "SNR", "Occurrences")
 
             sb_eff_cqi = []
-            for i in range(0, constants.avail_sb_ranges_per_bw[bw]):
+            for i in range(0, common_const.avail_sb_ranges_per_bw[bw]):
                 sb_eff_cqi.extend(result['sb_{}_eff_cqi'.format(i)])
             stripped_sb_eff_cqi = []
             self.remove_invalid_values(sb_eff_cqi, stripped_sb_eff_cqi, isCqi=True)
@@ -367,3 +368,39 @@ class Parser:
     reference_sb_snr_mode_delta = 0
     reference_sb_snr_mean_delta_db = 0
     reference_sb_snr_mode_delta_db = 0
+
+
+def main(results_filepath):
+
+    if results_filepath.endswith('csv'):
+        return
+    elif results_filepath.endswith('db'):
+        print(results_filepath)
+        print(os.path.normpath(results_filepath))
+        db = database_helper.create_db_engine(os.path.normpath(results_filepath))
+        parser = Parser(db)
+
+
+    #     bw = ['5', '10', '15', '20']
+    #     input_proc = []
+    #     parse = True
+    #
+    #     for bandwidths in bw:
+    #         for target_snr in data_ranges['target_snr']:
+    #             input_proc.append((bandwidths, target_snr))
+    #
+    #     if parse:
+    #         parse_process('20', 19)
+    #         for bandw in bw:
+    #             for snr in data_ranges['target_snr']:
+    #                 parse_process(bandw, snr)
+    #
+    #     print(input_proc)
+    #     if parse:
+    #         with multiprocessing.Pool(multiprocessing.cpu_count()) as pool:
+    #             pool.starmap(parse_process, tuple(input_proc))
+
+            # def parse_process(bandwidth, tar_snr):
+            #     print("Par Called for bw:", bandwidth, "SNR: ", tar_snr)
+            #     parser = create_parser()
+            #     parser.handle_subband_results(bandwidth, tar_snr)

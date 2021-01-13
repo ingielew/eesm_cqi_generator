@@ -1,6 +1,6 @@
 from numpy import sqrt, abs, power
 from .freq_attenuation import complex_gaussian
-from .. import constants
+from eff_snr import constants
 
 
 def generate_siso_channel_distribution(mean_val, std_dev, bw, pathloss_exp, distance):

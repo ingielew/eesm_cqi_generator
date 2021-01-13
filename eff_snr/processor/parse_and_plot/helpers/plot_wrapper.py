@@ -4,6 +4,7 @@ from numpy import mean, round
 from collections import Counter
 from eff_snr.constants import cqi_to_sinr_thresholds
 
+
 def plot(results, text, title, xlabel, ylabel, isCqi=False):
     if len(results) > 0:
         f = pyplot.figure()
