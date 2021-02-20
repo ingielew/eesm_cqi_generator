@@ -106,8 +106,8 @@ combined_results = {
     'sb_cqi_count_15': [],
 }
 
-all_eff_sb_snr_columns = '"sb_snr_0", "sb_snr_1", "sb_snr_2", "sb_snr_3", "sb_snr_4", "sb_snr_5",' \
-                      ' "sb_snr_6","sb_snr_7","sb_snr_8", "sb_snr_9", "sb_snr_10", "sb_snr_11", "sb_snr_12"'
+all_eff_sb_snr_columns = '"sb_0_eff_snr", "sb_1_eff_snr", "sb_2_eff_snr", "sb_3_eff_snr", "sb_4_eff_snr", "sb_5_eff_snr",' \
+                      '"sb_6_eff_snr","sb_7_eff_snr","sb_8_eff_snr", "sb_9_eff_snr", "sb_10_eff_snr", "sb_11_eff_snr", "sb_12_eff_snr"'
 
-all_eff_snr_columns = '"wb_snr", "sb_snr_0", "sb_snr_1", "sb_snr_2", "sb_snr_3", "sb_snr_4", "sb_snr_5",' \
-                      ' "sb_snr_6","sb_snr_7","sb_snr_8", "sb_snr_9", "sb_snr_10", "sb_snr_11", "sb_snr_12"'
+all_eff_snr_columns = '"wb_eff_snr", "sb_0_eff_snr", "sb_1_eff_snr", "sb_2_eff_snr", "sb_3_eff_snr", "sb_4_eff_snr", "sb_5_eff_snr",' \
+                      '"sb_6_eff_snr","sb_7_eff_snr","sb_8_eff_snr", "sb_9_eff_snr", "sb_10_eff_snr", "sb_11_eff_snr", "sb_12_eff_snr"'

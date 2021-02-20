@@ -4,17 +4,13 @@ from pandas import read_sql_query, DataFrame
 
 
 class DatabaseHelper:
-    def __init__(self):
+    def __init__(self, engine):
         self.df_gen = DataFrame.from_dict(constants.generated_df)
+        self.engine = engine
 
     def read_data_from_db(self, eff_snr_cols, bw, target_snr, punctured_sc):
-        if eff_snr_cols == 'all_sb':
-            sql = 'SELECT {} ' \
-                  'FROM data_input ' \
-                  'WHERE "target_snr"={} AND "bw"={} AND "punctured_sc"={}' \
-                .format(constants.all_eff_snr_columns, target_snr, bw, punctured_sc)
-            return read_sql_query(sql, self.engine)
-        elif eff_snr_cols == 'wb':
+
+        if eff_snr_cols == 'wb':
             sql = 'SELECT {} ' \
                   'FROM data_input ' \
                   'WHERE "target_snr"={} AND "bw"={} AND "punctured_sc"={}' \

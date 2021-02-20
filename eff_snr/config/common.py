@@ -22,16 +22,20 @@ ROOT_DIR = ""
 DEFAULT_CONFIG_DIR = ""
 
 
-def initialize_result_dir():
+def initialize_result_dir_path():
     global RESULTS_DIR
     timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     RESULTS_DIR = os.path.join(os.getcwd(), "results", timestamp)
+    print(RESULTS_DIR)
+
+
+def create_result_dir():
+    global RESULTS_DIR
     try:
         os.mkdir(RESULTS_DIR)
     except OSError as os_error:
         if os_error.errno != errno.EEXIST:
             raise
-    print(RESULTS_DIR)
 
 
 def initialize_root_dir():
@@ -42,6 +46,7 @@ def initialize_root_dir():
 
 
 def parse_config_file(config_file):
+    create_result_dir()
     parser = configparser.ConfigParser()
     parser.read_file(config_file)
     SIMULATION_CONFIG['data_storage_type'] = parser['Simulation Config']['data_storage_type']

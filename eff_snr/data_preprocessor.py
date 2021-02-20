@@ -1,13 +1,14 @@
-from eff_snr.data import constants as data_const
 from eff_snr import constants as common_const
+from eff_snr.data import constants as data_const
 from copy import deepcopy
 from scipy import stats
 import numpy as np
-from pandas import DataFrame
+from pandas import DataFrame, read_sql_query
 from eff_snr.processor.parse_and_plot.helpers import plot_wrapper
 from collections import Counter
 from eff_snr.data import database_helper
 import os
+
 
 class Parser:
     def __init__(self, database):
@@ -29,154 +30,149 @@ class Parser:
             if punctured_sc == 0:
                 self.write_partial_df(results_df, 'deltas', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
-            result = self.db.read_data_from_db('all', bw, target_snr, punctured_sc)
-            self.write_partial_df(results_df, 'config', bw, target_snr, punctured_sc)
+            sql_query = 'SELECT {}  FROM data_input  WHERE "target_snr"={} AND "bw"={}' \
+                .format(data_const.all_eff_snr_columns, target_snr, bw, punctured_sc)
+            result = read_sql_query(sql_query, self.db)
 
+            # self.write_partial_df(results_df, 'config', bw, target_snr, punctured_sc)
+            print(result)
             sb_eff_snr_lin = []
-            for i in range(0, common_const.avail_sb_ranges_per_bw[bw]):
-                # print("subband no", constants.avail_sb_ranges_per_bw[bw], "bw", bw)
-                sb_eff_snr_lin.extend(result['sb_{}_eff_snr'.format(i)])
+
+            # for i in range(0, common_const.avail_sb_ranges_per_bw[str(bw)]):
+            #     sb_eff_snr_lin.extend(result['sb_{}_eff_snr'.format(i)])
             #
-            # print("result", sb_eff_snr_lin)
-            #
-            # for item in result:
-            #     if item is None:
-            #         print("at", item)
+            # stripped_eff_snr_lin = []
+            # # results_below_threshold = self.remove_invalid_values(sb_eff_snr_lin, stripped_eff_snr_lin)
+            # results_below_threshold = 0
+            # percentage_of_invalid_measurements = np.round(results_below_threshold/len(sb_eff_snr_lin)*100, 2)
+            # comment = "WB eff. SNR for BW={}, SNR={}, Punctured Subcarriers={},\n " \
+            #           "{} irrelevant results have been generated ({}%).\n" \
+            #         .format(bw, target_snr, punctured_sc, results_below_threshold, percentage_of_invalid_measurements)
+            # new_comment = self.snr_cqi_results_handle(results_df, 'sb_snr_lin', sb_eff_snr_lin)
+            # sb_snr_lin_comment = comment + new_comment
+            # sb_snr_lin_fig_name = sc_figure_name + "sb_snr_lin"
+            # plot_wrapper.plot(sb_eff_snr_lin, sb_snr_lin_comment, sb_snr_lin_fig_name, "SNR", "Occurrences")
 
-
-            stripped_eff_snr_lin = []
-            # results_below_threshold = self.remove_invalid_values(sb_eff_snr_lin, stripped_eff_snr_lin)
-            results_below_threshold = 0
-            percentage_of_invalid_measurements = np.round(results_below_threshold/len(sb_eff_snr_lin)*100, 2)
-            comment = "WB eff. SNR for BW={}, SNR={}, Punctured Subcarriers={},\n " \
-                      "{} irrelevant results have been generated ({}%).\n" \
-                    .format(bw, target_snr, punctured_sc, results_below_threshold, percentage_of_invalid_measurements)
-            new_comment = self.snr_cqi_results_handle(results_df, 'sb_snr_lin', sb_eff_snr_lin)
-            # print(sb_eff_snr_lin)
-            sb_snr_lin_comment = comment + new_comment
-            sb_snr_lin_fig_name = sc_figure_name + "sb_snr_lin"
-            plot_wrapper.plot(sb_eff_snr_lin, sb_snr_lin_comment, sb_snr_lin_fig_name, "SNR", "Occurrences")
-
-            sb_eff_snr_db = 10*np.log10(sb_eff_snr_lin)
-            comment = "SB eff. SNR for BW={}, SNR={}, Punctured Subcarriers={},\n " \
-                      "{} irrelevant results have been generated ({}%).\n" \
-                    .format(bw, target_snr, punctured_sc, results_below_threshold, percentage_of_invalid_measurements)
-            new_comment = self.snr_cqi_results_handle(results_df, 'sb_snr_db', sb_eff_snr_db)
-            sb_snr_lin_comment = comment + new_comment
-            sb_snr_db_fig_name = sc_figure_name + "sb_snr_db"
-
-            sb_eff_snr_db = [float(sb_eff_snr_db[i]) for i in range(0, len(sb_eff_snr_db))]
-            neg_infinity_indexes = np.isneginf(sb_eff_snr_db)
-            clean_result = []
-            for i in range(0, len(sb_eff_snr_db)):
-                if not neg_infinity_indexes[i]:
-                    clean_result.append(sb_eff_snr_db[i])
-
-            plot_wrapper.plot(clean_result, sb_snr_lin_comment, sb_snr_db_fig_name, "SNR", "Occurrences")
-
-            sb_eff_cqi = []
-            for i in range(0, common_const.avail_sb_ranges_per_bw[bw]):
-                sb_eff_cqi.extend(result['sb_{}_eff_cqi'.format(i)])
-            stripped_sb_eff_cqi = []
-            self.remove_invalid_values(sb_eff_cqi, stripped_sb_eff_cqi, isCqi=True)
-            sb_eff_cqi = [int(elem) for elem in stripped_sb_eff_cqi]
-
-            comment = "SB CQI dist. For BW={}, SNR={}, Punctured Subcarriers={}.\n".format(bw, target_snr, punctured_sc)
-            new_comment = self.snr_cqi_results_handle(results_df, 'sb_cqi', sb_eff_cqi)
-            sb_cqi_comment = comment + new_comment
-            sb_cqi_fig_name = sc_figure_name + "sb_cqi"
-            plot_wrapper.plot(sb_eff_cqi, sb_cqi_comment, sb_cqi_fig_name, "CQI", "Occurrences")
-
-            wb_eff_snr_lin = result['wb_eff_snr']
-            # stripped_wb_eff_snr_lin = []
-            # results_below_threshold = self.remove_invalid_values(wb_eff_snr_lin, stripped_wb_eff_snr_lin)
-            results_below_threshold = 0
-            percentage_of_invalid_measurements = results_below_threshold/len(wb_eff_snr_lin)
-            comment = "WB eff. SNR for BW={}, SNR={}, Punctured Subcarriers={},\n" \
-                      " {} irrelevant results have been generated ({}%).\n" \
-                    .format(bw, target_snr, punctured_sc, results_below_threshold, percentage_of_invalid_measurements)
-            new_comment = self.snr_cqi_results_handle(results_df, 'wb_snr_lin', wb_eff_snr_lin)
-            wb_snr_lin_comment = comment + new_comment
-            wb_snr_lin_fig_name = sc_figure_name + "wb_snr_lin"
-            plot_wrapper.plot(sb_eff_snr_lin, wb_snr_lin_comment, wb_snr_lin_fig_name, "SNR", "Occurrences")
-
-            wb_eff_snr_db = 10*np.log10(wb_eff_snr_lin)
-            comment = "WB eff. SNR for BW={}, SNR={}, Punctured Subcarriers={},\n" \
-                      " {} irrelevant results have been generated ({}%).\n" \
-                    .format(bw, target_snr, punctured_sc, results_below_threshold, percentage_of_invalid_measurements)
-            new_comment = self.snr_cqi_results_handle(results_df, 'wb_snr_db', wb_eff_snr_db)
-            wb_snr_db_comment = comment + new_comment
-            wb_snr_db_fig_name = sc_figure_name + "wb_snr_db"
-
-            wb_eff_snr_db = [float(wb_eff_snr_db[i]) for i in range(0, len(wb_eff_snr_db))]
-            neg_infinity_indexes = np.isneginf(sb_eff_snr_db)
-            clean_result_wb = []
-            for i in range(0, len(wb_eff_snr_db)):
-                if not neg_infinity_indexes[i]:
-                    clean_result_wb.append(wb_eff_snr_db[i])
-            plot_wrapper.plot(clean_result_wb, wb_snr_db_comment, wb_snr_db_fig_name, "SNR", "Occurrences")
-
-            wb_eff_cqi = result['wb_eff_cqi']
-            wb_eff_cqi = [int(elem) for elem in wb_eff_cqi]
-            comment = "WB CQI dist. For BW={}, SNR={}, Punctured Subcarriers={}.\n".format(bw, target_snr, punctured_sc)
-            new_comment = self.snr_cqi_results_handle(results_df, 'wb_cqi', wb_eff_cqi)
-            wb_cqi_comment = comment + new_comment
-            wb_snr_db_fig_name = sc_figure_name + "wb_cqi"
-            plot_wrapper.plot(wb_eff_cqi, wb_cqi_comment, wb_snr_db_fig_name, "CQI", "Occurrences")
-
-            if punctured_sc > 0:
-                self.calculate_deltas(results_df, sb_eff_cqi, sb_eff_snr_db, sb_eff_snr_lin, wb_eff_cqi,
-                                      wb_eff_snr_db,
-                                      wb_eff_snr_lin)
-            else:
-                self.update_reference_data(sb_eff_cqi, sb_eff_snr_db, sb_eff_snr_lin, wb_eff_cqi, wb_eff_snr_db,
-                                           wb_eff_snr_lin)
-
-            combined_results_df['bw'] = [bw]
-            combined_results_df['target_snr'] = [target_snr]
-            combined_results_df['punctured_sc'] = [punctured_sc]
-
-            values = list(Counter(wb_eff_cqi).keys())
-            count = list(Counter(wb_eff_cqi).values())
-            # print('val', values, 'count', count)
-
-            for i in range(0, 16):
-                combined_results_df['wb_cqi_count_{}'.format(i)] = [0]
-
-            for i in range(0, 16):
-                combined_results_df['sb_cqi_count_{}'.format(i)] = [0]
-
-            for i in range(0, len(values)):
-                combined_results_df['wb_cqi_count_{}'.format(values[i])] = [count[i]]
-
-            values = list(Counter(sb_eff_cqi).keys())
-            count = list(Counter(sb_eff_cqi).values())
-            for i in range(0, len(values)):
-                combined_results_df['sb_cqi_count_{}'.format(values[i])] = [count[i]]
-
-            combined_wb_dist_snr.append(deepcopy(clean_result_wb))
-            combined_wb_dist_cqi.append(np.round(wb_eff_cqi))
-            combined_sb_dist_snr.append(deepcopy(clean_result))
-            combined_sb_dist_cqi.append(np.round(sb_eff_cqi))
-            combined_punctured_sc.append(punctured_sc)
-            self.db.commit_result_data_to_sql(results_df)
-            self.db.commit_result_data_to_sql(combined_results_df, 'cqi_count')
-
-        comment = ""
-        combined_wb_snr_figure_name = "combined_wb_snr_bw_{}_snr_{}".format(bw, target_snr)
-        plot_wrapper.plot(combined_wb_dist_snr, comment, combined_wb_snr_figure_name, "SNR", "Occurrences")
-        # combined_wb_cqi_figure_name = "combined_wb_cqi_{}_snr_{}".format(bw, target_snr)
-        # plot_wrapper.plot(combined_wb_dist_cqi, comment, combined_wb_cqi_figure_name, "CQI", "Occurrences", isCqi=True)
-        combined_sb_snr_figure_name = "combined_sb_snr_{}_snr_{}".format(bw, target_snr)
-        plot_wrapper.plot(combined_sb_dist_snr, comment, combined_sb_snr_figure_name, "SNR", "Occurrences")
-        # combined_sb_cqi_figure_name = "combined_sb_cqi_{}_snr_{}".format(bw, target_snr)
-        # plot_wrapper.plot(combined_sb_dist_cqi, comment, combined_sb_cqi_figure_name, "CQI", "Occurrences", isCqi=True)
-
-        scatter_combined_wb_name = "scatter_snr_{}_{}".format(bw, target_snr)
-        plot_wrapper.scatter_plot(combined_punctured_sc, combined_wb_dist_snr, comment, scatter_combined_wb_name,
-                                    'Punctured resources', 'SNR')
-
-        self.clear_temp_variables()
+        #     sb_eff_snr_db = 10*np.log10(sb_eff_snr_lin)
+        #     comment = "SB eff. SNR for BW={}, SNR={}, Punctured Subcarriers={},\n " \
+        #               "{} irrelevant results have been generated ({}%).\n" \
+        #             .format(bw, target_snr, punctured_sc, results_below_threshold, percentage_of_invalid_measurements)
+        #     new_comment = self.snr_cqi_results_handle(results_df, 'sb_snr_db', sb_eff_snr_db)
+        #     sb_snr_lin_comment = comment + new_comment
+        #     sb_snr_db_fig_name = sc_figure_name + "sb_snr_db"
+        #
+        #     sb_eff_snr_db = [float(sb_eff_snr_db[i]) for i in range(0, len(sb_eff_snr_db))]
+        #     neg_infinity_indexes = np.isneginf(sb_eff_snr_db)
+        #     clean_result = []
+        #     for i in range(0, len(sb_eff_snr_db)):
+        #         if not neg_infinity_indexes[i]:
+        #             clean_result.append(sb_eff_snr_db[i])
+        #
+        #     plot_wrapper.plot(clean_result, sb_snr_lin_comment, sb_snr_db_fig_name, "SNR", "Occurrences")
+        #
+        #     sb_eff_cqi = []
+        #     for i in range(0, common_const.avail_sb_ranges_per_bw[bw]):
+        #         sb_eff_cqi.extend(result['sb_{}_eff_cqi'.format(i)])
+        #     stripped_sb_eff_cqi = []
+        #     self.remove_invalid_values(sb_eff_cqi, stripped_sb_eff_cqi, isCqi=True)
+        #     sb_eff_cqi = [int(elem) for elem in stripped_sb_eff_cqi]
+        #
+        #     comment = "SB CQI dist. For BW={}, SNR={}, Punctured Subcarriers={}.\n".format(bw, target_snr, punctured_sc)
+        #     new_comment = self.snr_cqi_results_handle(results_df, 'sb_cqi', sb_eff_cqi)
+        #     sb_cqi_comment = comment + new_comment
+        #     sb_cqi_fig_name = sc_figure_name + "sb_cqi"
+        #     plot_wrapper.plot(sb_eff_cqi, sb_cqi_comment, sb_cqi_fig_name, "CQI", "Occurrences")
+        #
+        #     wb_eff_snr_lin = result['wb_eff_snr']
+        #     # stripped_wb_eff_snr_lin = []
+        #     # results_below_threshold = self.remove_invalid_values(wb_eff_snr_lin, stripped_wb_eff_snr_lin)
+        #     results_below_threshold = 0
+        #     percentage_of_invalid_measurements = results_below_threshold/len(wb_eff_snr_lin)
+        #     comment = "WB eff. SNR for BW={}, SNR={}, Punctured Subcarriers={},\n" \
+        #               " {} irrelevant results have been generated ({}%).\n" \
+        #             .format(bw, target_snr, punctured_sc, results_below_threshold, percentage_of_invalid_measurements)
+        #     new_comment = self.snr_cqi_results_handle(results_df, 'wb_snr_lin', wb_eff_snr_lin)
+        #     wb_snr_lin_comment = comment + new_comment
+        #     wb_snr_lin_fig_name = sc_figure_name + "wb_snr_lin"
+        #     plot_wrapper.plot(sb_eff_snr_lin, wb_snr_lin_comment, wb_snr_lin_fig_name, "SNR", "Occurrences")
+        #
+        #     wb_eff_snr_db = 10*np.log10(wb_eff_snr_lin)
+        #     comment = "WB eff. SNR for BW={}, SNR={}, Punctured Subcarriers={},\n" \
+        #               " {} irrelevant results have been generated ({}%).\n" \
+        #             .format(bw, target_snr, punctured_sc, results_below_threshold, percentage_of_invalid_measurements)
+        #     new_comment = self.snr_cqi_results_handle(results_df, 'wb_snr_db', wb_eff_snr_db)
+        #     wb_snr_db_comment = comment + new_comment
+        #     wb_snr_db_fig_name = sc_figure_name + "wb_snr_db"
+        #
+        #     wb_eff_snr_db = [float(wb_eff_snr_db[i]) for i in range(0, len(wb_eff_snr_db))]
+        #     neg_infinity_indexes = np.isneginf(sb_eff_snr_db)
+        #     clean_result_wb = []
+        #     for i in range(0, len(wb_eff_snr_db)):
+        #         if not neg_infinity_indexes[i]:
+        #             clean_result_wb.append(wb_eff_snr_db[i])
+        #     plot_wrapper.plot(clean_result_wb, wb_snr_db_comment, wb_snr_db_fig_name, "SNR", "Occurrences")
+        #
+        #     wb_eff_cqi = result['wb_eff_cqi']
+        #     wb_eff_cqi = [int(elem) for elem in wb_eff_cqi]
+        #     comment = "WB CQI dist. For BW={}, SNR={}, Punctured Subcarriers={}.\n".format(bw, target_snr, punctured_sc)
+        #     new_comment = self.snr_cqi_results_handle(results_df, 'wb_cqi', wb_eff_cqi)
+        #     wb_cqi_comment = comment + new_comment
+        #     wb_snr_db_fig_name = sc_figure_name + "wb_cqi"
+        #     plot_wrapper.plot(wb_eff_cqi, wb_cqi_comment, wb_snr_db_fig_name, "CQI", "Occurrences")
+        #
+        #     if punctured_sc > 0:
+        #         self.calculate_deltas(results_df, sb_eff_cqi, sb_eff_snr_db, sb_eff_snr_lin, wb_eff_cqi,
+        #                               wb_eff_snr_db,
+        #                               wb_eff_snr_lin)
+        #     else:
+        #         self.update_reference_data(sb_eff_cqi, sb_eff_snr_db, sb_eff_snr_lin, wb_eff_cqi, wb_eff_snr_db,
+        #                                    wb_eff_snr_lin)
+        #
+        #     combined_results_df['bw'] = [bw]
+        #     combined_results_df['target_snr'] = [target_snr]
+        #     combined_results_df['punctured_sc'] = [punctured_sc]
+        #
+        #     values = list(Counter(wb_eff_cqi).keys())
+        #     count = list(Counter(wb_eff_cqi).values())
+        #     # print('val', values, 'count', count)
+        #
+        #     for i in range(0, 16):
+        #         combined_results_df['wb_cqi_count_{}'.format(i)] = [0]
+        #
+        #     for i in range(0, 16):
+        #         combined_results_df['sb_cqi_count_{}'.format(i)] = [0]
+        #
+        #     for i in range(0, len(values)):
+        #         combined_results_df['wb_cqi_count_{}'.format(values[i])] = [count[i]]
+        #
+        #     values = list(Counter(sb_eff_cqi).keys())
+        #     count = list(Counter(sb_eff_cqi).values())
+        #     for i in range(0, len(values)):
+        #         combined_results_df['sb_cqi_count_{}'.format(values[i])] = [count[i]]
+        #
+        #     combined_wb_dist_snr.append(deepcopy(clean_result_wb))
+        #     combined_wb_dist_cqi.append(np.round(wb_eff_cqi))
+        #     combined_sb_dist_snr.append(deepcopy(clean_result))
+        #     combined_sb_dist_cqi.append(np.round(sb_eff_cqi))
+        #     combined_punctured_sc.append(punctured_sc)
+        #     self.db.commit_result_data_to_sql(results_df)
+        #     self.db.commit_result_data_to_sql(combined_results_df, 'cqi_count')
+        #
+        # comment = ""
+        # combined_wb_snr_figure_name = "combined_wb_snr_bw_{}_snr_{}".format(bw, target_snr)
+        # plot_wrapper.plot(combined_wb_dist_snr, comment, combined_wb_snr_figure_name, "SNR", "Occurrences")
+        # # combined_wb_cqi_figure_name = "combined_wb_cqi_{}_snr_{}".format(bw, target_snr)
+        # # plot_wrapper.plot(combined_wb_dist_cqi, comment, combined_wb_cqi_figure_name, "CQI", "Occurrences", isCqi=True)
+        # combined_sb_snr_figure_name = "combined_sb_snr_{}_snr_{}".format(bw, target_snr)
+        # plot_wrapper.plot(combined_sb_dist_snr, comment, combined_sb_snr_figure_name, "SNR", "Occurrences")
+        # # combined_sb_cqi_figure_name = "combined_sb_cqi_{}_snr_{}".format(bw, target_snr)
+        # # plot_wrapper.plot(combined_sb_dist_cqi, comment, combined_sb_cqi_figure_name, "CQI", "Occurrences", isCqi=True)
+        #
+        # scatter_combined_wb_name = "scatter_snr_{}_{}".format(bw, target_snr)
+        # plot_wrapper.scatter_plot(combined_punctured_sc, combined_wb_dist_snr, comment, scatter_combined_wb_name,
+        #                             'Punctured resources', 'SNR')
+        #
+        # self.clear_temp_variables()
 
     def calculate_deltas(self, results_df, sb_eff_cqi, sb_eff_snr_db, sb_eff_snr_lin, wb_eff_cqi, wb_eff_snr_db,
                          wb_eff_snr_lin):
@@ -370,15 +366,21 @@ class Parser:
     reference_sb_snr_mode_delta_db = 0
 
 
-def main(results_filepath):
+def main(sim_config):
+    results_filepath = sim_config['process_data_file']
 
     if results_filepath.endswith('csv'):
         return
     elif results_filepath.endswith('db'):
-        print(results_filepath)
-        print(os.path.normpath(results_filepath))
-        db = database_helper.create_db_engine(os.path.normpath(results_filepath))
+        db = database_helper.create_db_engine(os.path.normpath(results_filepath), is_db_existing=True)
         parser = Parser(db)
+
+        for bw in sim_config['bw']:
+            if str(bw) in common_const.data_ranges['bw']:
+                for snr in common_const.data_ranges['target_snr']:
+                    parser.handle_subband_results(bw, -11)
+
+        # parser.handle_subband_results()
 
 
     #     bw = ['5', '10', '15', '20']

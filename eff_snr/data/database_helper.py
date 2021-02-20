@@ -36,7 +36,8 @@ def commit_gen_data_to_sql(df, engine):
     df.to_sql('data_input', con=engine, schema=None, if_exists='append', index=False, index_label=None)
 
 
-def create_db_engine(write_path):
-    db_path = path.join(write_path, 'data.db')
-    print(db_path)
-    return sqlalchemy.create_engine('{}:///{}'.format('sqlite', db_path))
+def create_db_engine(write_path, is_db_existing=False):
+    if is_db_existing is not True:
+        write_path = path.join(write_path, 'data.db')
+    print(write_path)
+    return sqlalchemy.create_engine('{}:///{}'.format('sqlite', write_path))

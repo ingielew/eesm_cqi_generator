@@ -1,11 +1,9 @@
 import tkinter as tk
-from eff_snr.config.common_config import SIMULATION_CONFIG
+from eff_snr.config.common import SIMULATION_CONFIG
 from tkinter import filedialog
-from eff_snr.config import common_config
+from eff_snr.config import common
 import configparser
 import os
-
-global SIMULATION_CONFIG
 
 
 def get_config():
@@ -29,7 +27,7 @@ class Application(tk.Frame):
         super().__init__(master)
         self.master = master
         self.prompt_generate_process()
-        self.master.geometry("450x75")
+        self.master.geometry("460x75")
         self.master.title("Effective SNR calculator")
 
         self.process_data_file = ""
@@ -37,7 +35,7 @@ class Application(tk.Frame):
     def save_input_generator_values(self):
         SIMULATION_CONFIG['data_storage_type'] = self.data_storage_type.get()
         SIMULATION_CONFIG['bw'].extend(list(self.bandwidths))
-        SIMULATION_CONFIG['target_snr'].extend(common_config.get_snr_range(self.snr_range_entry.get()))
+        SIMULATION_CONFIG['target_snr'].extend(common.get_snr_range(self.snr_range_entry.get()))
         SIMULATION_CONFIG['punctured_sc'] = self.no_of_punctured_resources_entry.get()
         SIMULATION_CONFIG['puncturing_area'] = self.puncturing_location.get()
         SIMULATION_CONFIG['pathloss_exp'] = self.pl_exp_entry.get()
@@ -52,7 +50,7 @@ class Application(tk.Frame):
         with open('config.ini', 'w') as f:
             parser.write(f)
 
-        with open(common_config.RESULTS_DIR + "config.ini", 'w') as f:
+        with open(common.RESULTS_DIR + "config.ini", 'w') as f:
             parser.write(f)
 
         self.master.destroy()
@@ -64,8 +62,8 @@ class Application(tk.Frame):
         self.master.destroy()
 
     def use_default_settings(self):
-        with open(common_config.DEFAULT_CONFIG_DIR) as config_file:
-            common_config.parse_config_file(config_file)
+        with open(common.DEFAULT_CONFIG_DIR) as config_file:
+            common.parse_config_file(config_file)
         self.master.destroy()
 
     def prompt_generate_process(self):
@@ -73,10 +71,11 @@ class Application(tk.Frame):
                  text="Select between generating new set of data, or processing existing one.",
                  justify=tk.CENTER) \
             .grid(row=0, columnspan=2, pady=5, padx=10)
-        tk.Button(self.master, text='Generate', command=self.create_generator_widgets).grid(row=1, column=0)
-        tk.Button(self.master, text='Process', command=self.create_processor_widgets).grid(row=1, column=1)
+
         tk.Button(self.master, text="Quit", fg="black", command=self.master.destroy,
-                                anchor="w", justify=tk.LEFT, width=5).grid(row=1, column=3)
+                  anchor="w", justify=tk.CENTER, width=5).grid(row=1, column=0)
+        tk.Button(self.master, text='Generate', command=self.create_generator_widgets).grid(row=1, column=1)
+        tk.Button(self.master, text='Process', command=self.create_processor_widgets).grid(row=1, column=2)
 
     def create_processor_widgets(self):
         window = tk.Toplevel(self.master)
@@ -104,11 +103,9 @@ class Application(tk.Frame):
                   anchor="w", justify=tk.CENTER).grid(row=2, column=0, pady=5)
 
         tk.Button(window, text="Quit", fg="black", command=self.master.destroy,
-                                anchor="w", justify=tk.CENTER, width=5).grid(row=3, column=0, pady=5)
+                  anchor="w", justify=tk.LEFT, width=5).grid(row=3, column=0, pady=5)
         tk.Button(window, text="Continue", fg="black", command=self.save_processor_config,
-                  anchor="w", justify=tk.CENTER).grid(row=3, column=1, pady=5)
-
-
+                  anchor="w", justify=tk.RIGHT).grid(row=3, column=1, pady=5)
 
     def create_generator_widgets(self):
         window = tk.Toplevel(self.master)
@@ -183,7 +180,7 @@ class Application(tk.Frame):
     def select_config_path(self):
         filename = filedialog.askopenfilename(filetypes=[("ini files", "*.ini")])
         with open(filename) as config_file:
-            common_config.parse_config_file(config_file)
+            common.parse_config_file(config_file)
         self.master.destroy()
 
     def select_data_path(self):
@@ -192,7 +189,7 @@ class Application(tk.Frame):
 
 
 class Checkbar(tk.Frame):
-    def __init__(self, parent=None, picks=[], side=tk.LEFT, anchor=tk.W):
+    def __init__(self, parent, picks, side=tk.LEFT, anchor=tk.W):
         tk.Frame.__init__(self, parent)
         self.vars = []
         for pick in picks:
